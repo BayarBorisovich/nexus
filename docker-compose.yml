@@ -1,0 +1,65 @@
+#version: '3'
+services:
+    web:
+        image: nginx
+        volumes:
+            - ./docker/conf/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - .:/var/www/html
+        ports:
+            - "80:80"
+        restart: always
+        depends_on:
+            - php-fpm
+            - db
+            - node  # Добавляем зависимость
+
+    php-fpm:
+        build: docker
+        restart: always
+        volumes:
+            - ./docker/conf/php/php.ini:/usr/local/etc/php/conf.d/php.ini
+            - ./docker/conf/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+            - .:/var/www/html
+        env_file:
+            - .env
+
+    db:
+        image: postgres:10.1
+        restart: always
+        environment:
+            - POSTGRES_DB=${DB_DATABASE}
+            - POSTGRES_USER=${DB_USERNAME}
+            - POSTGRES_PASSWORD=${DB_PASSWORD}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "54321:5432"
+
+    rabbitmq:
+        image: rabbitmq:3.10.7-management
+        hostname: rabbitmq
+        restart: always
+        environment:
+            - RABBITMQ_DEFAULT_USER=rmuser
+            - RABBITMQ_DEFAULT_PASS=rmpassword
+        ports:
+            - "15672:15672"
+
+    # Добавляем сервис Node.js для Vite
+    node:
+        image: node:20-alpine
+        working_dir: /var/www/html
+        volumes:
+            - .:/var/www/html
+            - /var/www/html/node_modules  # Отдельный volume для node_modules
+        ports:
+            - "5173:5173"
+        command: sh -c "npm install && npm run dev"
+        environment:
+            - CHOKIDAR_USEPOLLING=true  # Для работы file watching в Docker
+        depends_on:
+            - php-fpm
+
+volumes:
+    postgres_data:
+        external: true
