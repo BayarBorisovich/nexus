@@ -3,13 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Laravel + Vue 3</title>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ config('app.name', 'Laravel') }}</title>
+    @vite(['resources/js/app.js'])
 </head>
-<body>
-<div id="app">
-    <example-component></example-component>
-</div>
+<body class="antialiased bg-[#edeef0] font-sans">
+@inertia
 </body>
 </html>

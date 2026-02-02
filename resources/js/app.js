@@ -1,16 +1,25 @@
 import './bootstrap';
-import { createApp } from 'vue';
+import { createApp, h } from 'vue';
+import { createInertiaApp } from '@inertiajs/vue3';
 
-// Импорт Bootstrap (если используете)
-import 'bootstrap';
+createInertiaApp({
+    title: (title) => `${title} - My App`,
+    resolve: async (name) => {
+        const pages = import.meta.glob('./Pages/**/*.vue', { eager: true });
+        const page = pages[`./Pages/${name}.vue`];
 
-// Импорт компонентов Vue
-import ExampleComponent from './components/ExampleComponent.vue';
+        if (!page) {
+            throw new Error(`Page ${name} not found`);
+        }
 
-const app = createApp({});
-
-// Регистрация компонентов
-app.component('example-component', ExampleComponent);
-
-// Монтирование приложения
-app.mount('#app');
+        return page.default;
+    },
+    setup({ el, App, props, plugin }) {
+        return createApp({ render: () => h(App, props) })
+            .use(plugin)
+            .mount(el);
+    },
+    progress: {
+        color: '#4B5563',
+    },
+});
