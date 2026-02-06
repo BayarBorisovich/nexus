@@ -13,18 +13,30 @@ return new class extends Migration
     {
         Schema::create('user_profiles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('avatar')->nullable();
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->onDelete('cascade');
+
             $table->text('bio')->nullable();
+            $table->string('avatar')->nullable();
             $table->date('birthdate')->nullable();
             $table->string('location')->nullable();
-            $table->json('social_links')->nullable(); // [{platform: 'github', url: '...'}, ...]
-            $table->string('phone')->nullable();
-            $table->enum('gender', ['male', 'female'])->nullable();
-            $table->json('interests')->nullable(); // ['программирование', 'музыка', ...]
-             $table->timestamps();
+            $table->string('website')->nullable();
+
+            // Для будущего использования (социальные сети)
+            $table->json('social_links')->nullable();
+            $table->json('interests')->nullable();
+
+            // Счётчики
+            $table->integer('followers_count')->default(0);
+            $table->integer('following_count')->default(0);
+            $table->integer('posts_count')->default(0);
+
+            $table->timestamps();
+
+            // Индексы для производительности
             $table->unique('user_id');
-            $table->softDeletes(); // если нужно
+            $table->index('created_at');
         });
     }
 

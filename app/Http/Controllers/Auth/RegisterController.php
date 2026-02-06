@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Actions\Auth\RegisterUser;
+use App\Actions\Auth\RegisterUserAction;
+use App\Http\Controllers\Controller; // ← ДОБАВЛЕНО
 use App\Http\Requests\Auth\RegisterRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\Request;
 
-class RegisterController
+class RegisterController extends Controller // ← ИЗМЕНЕНО: добавлено extends Controller
 {
     /**
      * Show registration form
@@ -24,14 +24,14 @@ class RegisterController
     /**
      * Handle registration request
      */
-    public function register(RegisterRequest $request, RegisterUser $registerUser): RedirectResponse
+    public function register(RegisterRequest $request, RegisterUserAction $registerUser): RedirectResponse
     {
         try {
             $user = $registerUser->execute($request->validated());
             Auth::login($user);
 
-            return redirect()->intended('/dashboard')
-                ->with('success', 'Добро пожаловать! Вы успешно зарегистрировались.');
+            return redirect()->intended(route('home'))
+            ->with('success', 'Добро пожаловать! Вы успешно зарегистрировались.');
 
         } catch (\Exception $e) {
             Log::error('Registration failed: ' . $e->getMessage());
@@ -43,5 +43,4 @@ class RegisterController
                 ]);
         }
     }
-
 }

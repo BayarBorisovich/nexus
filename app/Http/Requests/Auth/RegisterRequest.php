@@ -25,7 +25,7 @@ class RegisterRequest extends FormRequest
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:50|unique:users',
             'email' => 'required|string|email|max:100|unique:users',
-            'password' => ['required', 'confirmed', 'min:6'],
+            'password' => ['required', 'confirmed', 'min:8'], // ← Изменено с 6 на 8
         ];
     }
 
@@ -44,7 +44,7 @@ class RegisterRequest extends FormRequest
             'username.required' => 'Поле "Никнейм" обязательно для заполнения.',
             'username.string' => 'Поле "Никнейм" должно быть строкой.',
             'username.max' => 'Поле "Никнейм" не должно превышать 50 символов.',
-            'username.unique' => 'Такой Никнейм уже занято.',
+            'username.unique' => 'Такой никнейм уже занят.',
 
             'email.required' => 'Поле "Email" обязательно для заполнения.',
             'email.string' => 'Поле "Email" должно быть строкой.',
@@ -60,9 +60,6 @@ class RegisterRequest extends FormRequest
 
     /**
      * Get custom attributes for validator errors.
-     * Этот метод переименовывает названия полей в сообщениях об ошибках
-     *
-     * @return array<string, string>
      */
     public function attributes(): array
     {
