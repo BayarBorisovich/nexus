@@ -23,10 +23,14 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Home');
     })->name('home');
 
-    // Profile routes (основные данные профиля)
+    // Profile routes
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
-    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    // ИСПРАВЛЕНО: POST вместо PUT — нужно для поддержки загрузки файлов (multipart/form-data)
+    // Во Vue форма отправляет _method: 'PUT', Laravel автоматически роутит на этот метод
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile/{user}', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Image routes (загрузка медиа) - ОТДЕЛЬНО
     Route::post('/avatar', [ImageController::class, 'uploadAvatar'])->name('avatar.upload');

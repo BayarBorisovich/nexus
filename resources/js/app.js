@@ -4,6 +4,9 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { ZiggyVue } from 'ziggy-js';
 import { Ziggy } from './ziggy';
 
+// Импорт Bootstrap JavaScript
+import 'bootstrap';
+
 createInertiaApp({
     title: (title) => `${title} - My App`,
     resolve: async (name) => {
@@ -23,6 +26,6 @@ createInertiaApp({
             .mount(el);
     },
     progress: {
-        color: '#4B5563',
+        color: '#00d9ff',
     },
 });

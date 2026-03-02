@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Profile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -77,6 +78,7 @@ class ProfileController extends Controller
 
     /**
      * Обновить профиль
+     * ИСПРАВЛЕНО: добавлена обработка аватара + маршрут изменён на POST с _method=PUT
      */
     public function update(UpdateProfileRequest $request)
     {
@@ -88,48 +90,55 @@ class ProfileController extends Controller
         // Обновить основные данные пользователя
         $user->update($request->only(['name', 'email', 'username']));
 
-        // Обновить профиль
-        $profile->update([
+        $profileData = [
             'bio' => $data['bio'] ?? null,
             'birthdate' => $data['birthdate'] ?? null,
             'location' => $data['location'] ?? null,
             'website' => $data['website'] ?? null,
             'social_links' => $data['social_links'] ?? [],
             'interests' => $data['interests'] ?? [],
-        ]);
+        ];
+
+        // ИСПРАВЛЕНО: обрабатываем аватар прямо здесь
+        if ($request->hasFile('avatar')) {
+            // Удалить старый аватар
+            if ($profile->avatar && Storage::disk('public')->exists($profile->avatar)) {
+                Storage::disk('public')->delete($profile->avatar);
+            }
+            // Сохранить новый
+            $profileData['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        $profile->update($profileData);
 
         return redirect()->route('profile.show', $user)->with('success', 'Профиль успешно обновлён!');
     }
 
-    /**
-     * Загрузить аватар
-     */
-    public function uploadAvatar(): Response
+    public function destroy(User $user): RedirectResponse
     {
-        $request = request();
-        $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
-
-        $user = Auth::user();
-        $profile = $user->getOrCreateProfile();
-
-        // Удалить старый аватар
-        if ($profile->avatar && Storage::disk('public')->exists($profile->avatar)) {
-            Storage::disk('public')->delete($profile->avatar);
+        // Только сам пользователь может удалить свой аккаунт
+        if (Auth::id() !== $user->id) {
+            abort(403);
         }
 
-        // Загрузить новый
-        $path = $request->file('avatar')->store('avatars', 'public');
-        $profile->update(['avatar' => $path]);
+        // Удалить аватар если есть
+        if ($user->profile && $user->profile->avatar) {
+            Storage::disk('public')->delete($user->profile->avatar);
+        }
 
-        return back()->with('success', 'Аватар успешно обновлён!');
+        // Разлогинить
+        Auth::logout();
+
+        // Удалить пользователя (профиль удалится каскадно если настроен onDelete cascade в миграции)
+        $user->delete();
+
+        return redirect()->route('login')->with('success', 'Аккаунт удалён.');
     }
 
     /**
      * Удалить аватар
      */
-    public function deleteAvatar()
+    public function deleteAvatar(): RedirectResponse
     {
         $user = Auth::user();
         $profile = $user->getOrCreateProfile();

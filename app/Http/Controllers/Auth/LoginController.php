@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -16,7 +17,7 @@ class LoginController extends Controller
         return Inertia::render('Auth/Login');
     }
 
-    public function login(LoginRequest $request)
+    public function login(LoginRequest $request): RedirectResponse
     {
         $credentials = $request->validated();
 
@@ -28,10 +29,10 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home')); // ← Изменено на route('home')
+        return redirect()->intended(route('home'));
     }
 
-    public function logout(Request $request) // ← ДОБАВЛЕНО
+    public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
 

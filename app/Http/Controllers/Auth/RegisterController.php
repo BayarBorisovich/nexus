@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Actions\Auth\RegisterUserAction;
-use App\Http\Controllers\Controller; // ← ДОБАВЛЕНО
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class RegisterController extends Controller // ← ИЗМЕНЕНО: добавлено extends Controller
+class RegisterController extends Controller
 {
     /**
      * Show registration form

@@ -1,185 +1,385 @@
 <template>
     <AppLayout>
-        <div class="max-w-2xl mx-auto px-4 py-8">
-            <h1 class="text-3xl font-bold mb-8">Редактирование профиля</h1>
+        <div class="container-fluid py-4">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h1 class="display-6 fw-bold text-white mb-0">
+                        <i class="bi bi-pencil-square text-info me-2"></i>
+                        Редактирование профиля
+                    </h1>
+                </div>
+            </div>
 
-            <!-- Форма -->
-            <form @submit.prevent="submit" class="bg-white rounded-lg shadow-lg p-8">
-                <!-- Имя -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Имя
-                    </label>
-                    <input
-                        v-model="form.name"
-                        type="text"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ваше имя"
-                    />
-                    <p v-if="form.errors.name" class="text-red-500 text-sm mt-1">
-                        {{ form.errors.name }}
-                    </p>
+            <div class="row g-4">
+                <!-- Форма редактирования -->
+                <div class="col-12 col-lg-8">
+                    <form @submit.prevent="submit" class="card">
+                        <div class="card-body p-4">
+                            <!-- Сообщения об успехе -->
+                            <div v-if="successMessage" class="alert alert-success mb-4" role="alert">
+                                <i class="bi bi-check-circle me-2"></i>
+                                {{ successMessage }}
+                            </div>
+
+                            <!-- Основная информация -->
+                            <div class="mb-5">
+                                <h5 class="text-white fw-bold mb-4 pb-3 border-bottom border-secondary">
+                                    Основная информация
+                                </h5>
+
+                                <!-- Имя -->
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Полное имя</label>
+                                    <input
+                                        v-model="form.name"
+                                        type="text"
+                                        id="name"
+                                        class="form-control"
+                                        :class="{ 'is-invalid': form.errors.name }"
+                                        placeholder="Ваше имя"
+                                    />
+                                    <div v-if="form.errors.name" class="invalid-feedback d-block">
+                                        {{ form.errors.name }}
+                                    </div>
+                                </div>
+
+                                <!-- Никнейм -->
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Никнейм</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-dark text-secondary border-secondary">@</span>
+                                        <input
+                                            v-model="form.username"
+                                            type="text"
+                                            id="username"
+                                            class="form-control"
+                                            :class="{ 'is-invalid': form.errors.username }"
+                                            placeholder="username"
+                                        />
+                                    </div>
+                                    <div v-if="form.errors.username" class="invalid-feedback d-block">
+                                        {{ form.errors.username }}
+                                    </div>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email адрес</label>
+                                    <input
+                                        v-model="form.email"
+                                        type="email"
+                                        id="email"
+                                        class="form-control"
+                                        :class="{ 'is-invalid': form.errors.email }"
+                                        placeholder="your@email.com"
+                                    />
+                                    <div v-if="form.errors.email" class="invalid-feedback d-block">
+                                        {{ form.errors.email }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Описание профиля -->
+                            <div class="mb-5">
+                                <h5 class="text-white fw-bold mb-4 pb-3 border-bottom border-secondary">
+                                    Описание
+                                </h5>
+
+                                <!-- Bio -->
+                                <div class="mb-3">
+                                    <label for="bio" class="form-label">Описание профиля</label>
+                                    <textarea
+                                        v-model="form.bio"
+                                        id="bio"
+                                        class="form-control"
+                                        :class="{ 'is-invalid': form.errors.bio }"
+                                        rows="4"
+                                        placeholder="Расскажите о себе..."
+                                    ></textarea>
+                                    <small class="text-secondary d-block mt-2">
+                                        {{ form.bio?.length || 0 }} / 500 символов
+                                    </small>
+                                    <div v-if="form.errors.bio" class="invalid-feedback d-block">
+                                        {{ form.errors.bio }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Интересы -->
+                            <div class="mb-5">
+                                <h5 class="text-white fw-bold mb-4 pb-3 border-bottom border-secondary">
+                                    Интересы
+                                </h5>
+
+                                <div class="mb-3">
+                                    <label for="interests" class="form-label">Интересы (через запятую)</label>
+                                    <input
+                                        v-model="form.interests"
+                                        type="text"
+                                        id="interests"
+                                        class="form-control"
+                                        :class="{ 'is-invalid': form.errors.interests }"
+                                        placeholder="Программирование, Дизайн, Путешествия"
+                                    />
+                                    <small class="text-secondary d-block mt-2">
+                                        Введите интересы через запятую
+                                    </small>
+                                    <div v-if="form.errors.interests" class="invalid-feedback d-block">
+                                        {{ form.errors.interests }}
+                                    </div>
+                                </div>
+
+                                <!-- Предпросмотр интересов -->
+                                <div v-if="form.interests" class="d-flex gap-2 flex-wrap">
+                                    <span
+                                        v-for="(interest, index) in form.interests.split(',')"
+                                        :key="index"
+                                        class="badge badge-secondary-custom"
+                                    >
+                                        {{ interest.trim() }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Социальные сети -->
+                            <div class="mb-5">
+                                <h5 class="text-white fw-bold mb-4 pb-3 border-bottom border-secondary">
+                                    Социальные сети
+                                </h5>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-sm-6">
+                                        <label for="twitter" class="form-label">
+                                            <i class="bi bi-twitter text-info me-2"></i>
+                                            Twitter
+                                        </label>
+                                        <input
+                                            v-model="form.twitter"
+                                            type="url"
+                                            id="twitter"
+                                            class="form-control"
+                                            placeholder="https://twitter.com/..."
+                                        />
+                                    </div>
+
+                                    <div class="col-12 col-sm-6">
+                                        <label for="github" class="form-label">
+                                            <i class="bi bi-github text-light me-2"></i>
+                                            GitHub
+                                        </label>
+                                        <input
+                                            v-model="form.github"
+                                            type="url"
+                                            id="github"
+                                            class="form-control"
+                                            placeholder="https://github.com/..."
+                                        />
+                                    </div>
+
+                                    <div class="col-12 col-sm-6">
+                                        <label for="linkedin" class="form-label">
+                                            <i class="bi bi-linkedin text-primary me-2"></i>
+                                            LinkedIn
+                                        </label>
+                                        <input
+                                            v-model="form.linkedin"
+                                            type="url"
+                                            id="linkedin"
+                                            class="form-control"
+                                            placeholder="https://linkedin.com/in/..."
+                                        />
+                                    </div>
+
+                                    <div class="col-12 col-sm-6">
+                                        <label for="website" class="form-label">
+                                            <i class="bi bi-globe text-warning me-2"></i>
+                                            Сайт
+                                        </label>
+                                        <input
+                                            v-model="form.website"
+                                            type="url"
+                                            id="website"
+                                            class="form-control"
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Кнопки действий -->
+                            <div class="d-flex gap-2 pt-4 border-top border-secondary">
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary"
+                                    :disabled="form.processing"
+                                >
+                                    <span v-if="!form.processing">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        Сохранить изменения
+                                    </span>
+                                    <span v-else>
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Сохранение...
+                                    </span>
+                                </button>
+
+                                <Link
+                                    :href="`/profile/${props.user?.username || props.user?.id}`"
+                                    class="btn btn-outline-light"
+                                >
+                                    <i class="bi bi-x-circle me-2"></i>
+                                    Отмена
+                                </Link>
+                            </div>
+                        </div>
+                    </form>
                 </div>
 
-                <!-- Email -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Email
-                    </label>
-                    <input
-                        v-model="form.email"
-                        type="email"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="your@email.com"
-                    />
-                    <p v-if="form.errors.email" class="text-red-500 text-sm mt-1">
-                        {{ form.errors.email }}
-                    </p>
-                </div>
+                <!-- Аватар и другая информация -->
+                <div class="col-12 col-lg-4">
+                    <!-- Загрузка аватара -->
+                    <div class="card mb-4">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-white mb-4">Фото профиля</h5>
 
-                <!-- Username -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Имя пользователя
-                    </label>
-                    <input
-                        v-model="form.username"
-                        type="text"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="username"
-                    />
-                    <p v-if="form.errors.username" class="text-red-500 text-sm mt-1">
-                        {{ form.errors.username }}
-                    </p>
-                </div>
+                            <!-- Текущий аватар -->
+                            <img
+                                :src="form.avatar_preview || auth.user.avatar_url"
+                                :alt="props.user?.name"
+                                class="avatar avatar-lg mb-4"
+                            />
 
-                <!-- Био -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        О себе
-                    </label>
-                    <textarea
-                        v-model="form.bio"
-                        rows="3"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        placeholder="Расскажите о себе..."
-                    ></textarea>
-                    <p v-if="form.errors.bio" class="text-red-500 text-sm mt-1">
-                        {{ form.errors.bio }}
-                    </p>
-                </div>
+                            <!-- Загрузка -->
+                            <div class="mb-3">
+                                <input
+                                    type="file"
+                                    id="avatar"
+                                    class="form-control d-none"
+                                    accept="image/*"
+                                    @change="onAvatarChange"
+                                />
+                                <label for="avatar" class="btn btn-secondary w-100">
+                                    <i class="bi bi-image me-2"></i>
+                                    Выбрать фото
+                                </label>
+                            </div>
 
-                <!-- Дата рождения -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Дата рождения
-                    </label>
-                    <input
-                        v-model="form.birthdate"
-                        type="date"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p v-if="form.errors.birthdate" class="text-red-500 text-sm mt-1">
-                        {{ form.errors.birthdate }}
-                    </p>
-                </div>
+                            <p class="text-secondary small mb-0">
+                                Максимум 5MB, PNG или JPG
+                            </p>
+                        </div>
 
-                <!-- Локация -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Местоположение
-                    </label>
-                    <input
-                        v-model="form.location"
-                        type="text"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Город, страна"
-                    />
-                    <p v-if="form.errors.location" class="text-red-500 text-sm mt-1">
-                        {{ form.errors.location }}
-                    </p>
-                </div>
+                        <!-- Информация профиля -->
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title text-white mb-3">Статистика</h5>
 
-                <!-- Сайт -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Веб-сайт
-                    </label>
-                    <input
-                        v-model="form.website"
-                        type="url"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="https://example.com"
-                    />
-                    <p v-if="form.errors.website" class="text-red-500 text-sm mt-1">
-                        {{ form.errors.website }}
-                    </p>
+                                <div class="row g-3 text-center">
+                                    <div class="col-12">
+                                        <small class="text-secondary d-block">Дата присоединения</small>
+                                        <span class="text-white fw-bold">{{ formatDate(auth.user.created_at) }}</span>
+                                    </div>
+                                    <div class="col-12">
+                                        <small class="text-secondary d-block">Последнее обновление</small>
+                                        <span class="text-white fw-bold">{{ formatDate(auth.user.updated_at) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <!-- Интересы -->
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Интересы (через запятую)
-                    </label>
-                    <input
-                        :value="interestsString"
-                        @input="updateInterests"
-                        type="text"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Спорт, музыка, путешествия..."
-                    />
-                    <p v-if="form.errors.interests" class="text-red-500 text-sm mt-1">
-                        {{ form.errors.interests }}
-                    </p>
-                </div>
-
-                <!-- Кнопка отправки -->
-                <button
-                    type="submit"
-                    :disabled="form.processing"
-                    class="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition disabled:opacity-50"
-                >
-                    {{ form.processing ? 'Сохранение...' : 'Сохранить профиль' }}
-                </button>
-            </form>
+            </div>
         </div>
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useForm } from '@inertiajs/vue3'
-import AppLayout from '@/Components/Layouts/AppLayout.vue'
+import { useForm, Link, usePage } from '@inertiajs/vue3'
+import { ref } from 'vue'
+import AppLayout from '@/Layouts/AppLayout.vue'
 
 const props = defineProps({
     user: Object,
     profile: Object,
 })
 
+const page = usePage()
+const auth = page.props.auth
+const successMessage = ref('')
+
+// social_links хранится как массив [{platform, url}, ...]
+// Преобразуем в удобный вид для формы
+const getSocialLink = (platform) => {
+    const links = props.profile?.social_links ?? []
+    return links.find(l => l.platform === platform)?.url || ''
+}
+
 const form = useForm({
-    name: props.user.name,
-    email: props.user.email,
-    username: props.user.username,
-    bio: props.profile.bio || '',
-    birthdate: props.profile.birthdate || '',
-    location: props.profile.location || '',
-    website: props.profile.website || '',
-    social_links: props.profile.social_links || [],
-    interests: props.profile.interests || [],
+    name: props.user?.name || '',
+    email: props.user?.email || '',
+    username: props.user?.username || '',
+    bio: props.profile?.bio || '',
+    interests: props.profile?.interests?.join(', ') || '',
+    twitter: getSocialLink('twitter'),
+    github: getSocialLink('github'),
+    linkedin: getSocialLink('linkedin'),
+    website: props.profile?.website || '',
+    avatar: null,
+    avatar_preview: null,
 })
+const onAvatarChange = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+        form.avatar = file
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            form.avatar_preview = e.target.result
+        }
+        reader.readAsDataURL(file)
+    }
+}
 
-const interestsString = computed(() => {
-    return form.interests.join(', ')
-})
-
-const updateInterests = (event) => {
-    form.interests = event.target.value
-        .split(',')
-        .map(i => i.trim())
-        .filter(Boolean)
+const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    })
 }
 
 const submit = () => {
-    form.put('/profile')
+    const interests = form.interests
+        ? form.interests.split(',').map(i => i.trim()).filter(Boolean)
+        : []
+
+    const social_links = []
+    if (form.twitter) social_links.push({ platform: 'twitter', url: form.twitter })
+    if (form.github) social_links.push({ platform: 'github', url: form.github })
+    if (form.linkedin) social_links.push({ platform: 'linkedin', url: form.linkedin })
+
+    form.transform(data => ({
+        ...data,
+        interests,
+        social_links,
+        // _method: 'PUT' — убрать эту строку!
+    })).post(`/profile`, {
+        onSuccess: () => {
+            successMessage.value = 'Профиль успешно обновлен!'
+            setTimeout(() => { successMessage.value = '' }, 3000)
+        }
+    })
 }
 </script>
+
+<style scoped>
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
+}
+
+.invalid-feedback {
+    color: #ef4444;
+    font-size: 0.875rem;
+}
+</style>
