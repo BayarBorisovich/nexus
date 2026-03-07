@@ -249,13 +249,13 @@
                                 class="avatar avatar-lg mb-4"
                             />
 
-                            <!-- Загрузка -->
+                            <!-- Загрузка нового аватара -->
                             <div class="mb-3">
                                 <input
                                     type="file"
                                     id="avatar"
                                     class="form-control d-none"
-                                    accept="image/*"
+                                    accept="image/jpeg,image/png,image/webp"
                                     @change="onAvatarChange"
                                 />
                                 <label for="avatar" class="btn btn-secondary w-100">
@@ -264,9 +264,45 @@
                                 </label>
                             </div>
 
+                            <!-- Кнопка удаления аватара — показывается только если аватар есть и не выбран новый -->
+                            <div v-if="hasExistingAvatar && !form.avatar_preview" class="mb-3">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-danger w-100"
+                                    :disabled="deleteAvatarProcessing"
+                                    @click="confirmDeleteAvatar"
+                                >
+                                    <span v-if="!deleteAvatarProcessing">
+                                        <i class="bi bi-trash me-2"></i>
+                                        Удалить фото
+                                    </span>
+                                    <span v-else>
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Удаление...
+                                    </span>
+                                </button>
+                            </div>
+
+                            <!-- Если выбран новый аватар — показать кнопку отмены выбора -->
+                            <div v-if="form.avatar_preview" class="mb-3">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary w-100"
+                                    @click="cancelAvatarSelection"
+                                >
+                                    <i class="bi bi-x-circle me-2"></i>
+                                    Отменить выбор
+                                </button>
+                            </div>
+
                             <p class="text-secondary small mb-0">
-                                Максимум 5MB, PNG или JPG
+                                Максимум 5MB, PNG, JPG или WEBP
                             </p>
+
+                            <!-- Ошибка валидации аватара -->
+                            <div v-if="form.errors.avatar" class="invalid-feedback d-block mt-2">
+                                {{ form.errors.avatar }}
+                            </div>
                         </div>
 
                         <!-- Информация профиля -->
@@ -294,8 +330,8 @@
 </template>
 
 <script setup>
-import { useForm, Link, usePage } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { useForm, Link, usePage, router } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
 import AppLayout from '@/Layouts/AppLayout.vue'
 
 const props = defineProps({
@@ -306,6 +342,7 @@ const props = defineProps({
 const page = usePage()
 const auth = page.props.auth
 const successMessage = ref('')
+const deleteAvatarProcessing = ref(false)
 
 // social_links хранится как массив [{platform, url}, ...]
 // Преобразуем в удобный вид для формы
@@ -315,18 +352,22 @@ const getSocialLink = (platform) => {
 }
 
 const form = useForm({
-    name: props.user?.name || '',
-    email: props.user?.email || '',
-    username: props.user?.username || '',
-    bio: props.profile?.bio || '',
-    interests: props.profile?.interests?.join(', ') || '',
-    twitter: getSocialLink('twitter'),
-    github: getSocialLink('github'),
-    linkedin: getSocialLink('linkedin'),
-    website: props.profile?.website || '',
-    avatar: null,
+    name:           props.user?.name || '',
+    email:          props.user?.email || '',
+    username:       props.user?.username || '',
+    bio:            props.profile?.bio || '',
+    interests:      props.profile?.interests?.join(', ') || '',
+    twitter:        getSocialLink('twitter'),
+    github:         getSocialLink('github'),
+    linkedin:       getSocialLink('linkedin'),
+    website:        props.profile?.website || '',
+    avatar:         null,
     avatar_preview: null,
 })
+
+// Есть ли сохранённый аватар на сервере
+const hasExistingAvatar = computed(() => !!auth.user.avatar_url)
+
 const onAvatarChange = (event) => {
     const file = event.target.files[0]
     if (file) {
@@ -337,6 +378,36 @@ const onAvatarChange = (event) => {
         }
         reader.readAsDataURL(file)
     }
+}
+
+// Отменить выбор нового файла — вернуть текущий аватар
+const cancelAvatarSelection = () => {
+    form.avatar = null
+    form.avatar_preview = null
+    // Сбросить input[type=file] чтобы можно было выбрать тот же файл снова
+    const input = document.getElementById('avatar')
+    if (input) input.value = ''
+}
+
+// Подтверждение перед удалением
+const confirmDeleteAvatar = () => {
+    if (!confirm('Вы уверены, что хотите удалить фото профиля?')) return
+    deleteAvatar()
+}
+
+// Отправить DELETE-запрос на сервер
+const deleteAvatar = () => {
+    deleteAvatarProcessing.value = true
+
+    router.delete('/profile/avatar', {
+        onSuccess: () => {
+            successMessage.value = 'Фото профиля удалено!'
+            setTimeout(() => { successMessage.value = '' }, 3000)
+        },
+        onFinish: () => {
+            deleteAvatarProcessing.value = false
+        },
+    })
 }
 
 const formatDate = (date) => {
@@ -353,16 +424,15 @@ const submit = () => {
         : []
 
     const social_links = []
-    if (form.twitter) social_links.push({ platform: 'twitter', url: form.twitter })
-    if (form.github) social_links.push({ platform: 'github', url: form.github })
+    if (form.twitter)  social_links.push({ platform: 'twitter',  url: form.twitter })
+    if (form.github)   social_links.push({ platform: 'github',   url: form.github })
     if (form.linkedin) social_links.push({ platform: 'linkedin', url: form.linkedin })
 
     form.transform(data => ({
         ...data,
         interests,
         social_links,
-        // _method: 'PUT' — убрать эту строку!
-    })).post(`/profile`, {
+    })).post('/profile', {
         onSuccess: () => {
             successMessage.value = 'Профиль успешно обновлен!'
             setTimeout(() => { successMessage.value = '' }, 3000)

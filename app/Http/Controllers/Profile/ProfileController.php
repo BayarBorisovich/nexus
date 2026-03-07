@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Profile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Models\User;
+use App\Services\AvatarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private readonly AvatarService $avatarService
+    ) {}
+
     /**
      * Показать профиль пользователя
      */
@@ -20,24 +24,24 @@ class ProfileController extends Controller
     {
         return Inertia::render('Profile/Show', [
             'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
+                'id'         => $user->id,
+                'name'       => $user->name,
+                'username'   => $user->username,
+                'email'      => $user->email,
                 'avatar_url' => $user->avatar_url,
             ],
             'profile' => $user->profile ? [
-                'bio' => $user->profile->bio,
-                'location' => $user->profile->location,
-                'website' => $user->profile->website,
-                'birthdate' => $user->profile->birthdate?->format('Y-m-d'),
-                'social_links' => $user->profile->social_links ?? [],
-                'interests' => $user->profile->interests ?? [],
-                'followers_count' => $user->profile->followers_count,
-                'following_count' => $user->profile->following_count,
-                'posts_count' => $user->profile->posts_count,
-                'avatar_url' => $user->profile->avatar_url,
-                'created_at' => $user->profile->created_at->format('d.m.Y'),
+                'bio'              => $user->profile->bio,
+                'location'         => $user->profile->location,
+                'website'          => $user->profile->website,
+                'birthdate'        => $user->profile->birthdate?->format('Y-m-d'),
+                'social_links'     => $user->profile->social_links ?? [],
+                'interests'        => $user->profile->interests ?? [],
+                'followers_count'  => $user->profile->followers_count,
+                'following_count'  => $user->profile->following_count,
+                'posts_count'      => $user->profile->posts_count,
+                'avatar_url'       => $user->profile->avatar_url,
+                'created_at'       => $user->profile->created_at->format('d.m.Y'),
             ] : null,
             'isOwnProfile' => Auth::check() && Auth::id() === $user->id,
         ]);
@@ -53,67 +57,75 @@ class ProfileController extends Controller
 
         return Inertia::render('Profile/Edit', [
             'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
+                'id'       => $user->id,
+                'name'     => $user->name,
+                'email'    => $user->email,
                 'username' => $user->username,
             ],
             'profile' => $user->profile ? [
-                'bio' => $user->profile->bio,
-                'birthdate' => $user->profile->birthdate?->format('Y-m-d'),
-                'location' => $user->profile->location,
-                'website' => $user->profile->website,
+                'bio'          => $user->profile->bio,
+                'birthdate'    => $user->profile->birthdate?->format('Y-m-d'),
+                'location'     => $user->profile->location,
+                'website'      => $user->profile->website,
                 'social_links' => $user->profile->social_links ?? [],
-                'interests' => $user->profile->interests ?? [],
+                'interests'    => $user->profile->interests ?? [],
             ] : [
-                'bio' => null,
-                'birthdate' => null,
-                'location' => null,
-                'website' => null,
+                'bio'          => null,
+                'birthdate'    => null,
+                'location'     => null,
+                'website'      => null,
                 'social_links' => [],
-                'interests' => [],
+                'interests'    => [],
             ],
         ]);
     }
 
     /**
      * Обновить профиль
-     * ИСПРАВЛЕНО: добавлена обработка аватара + маршрут изменён на POST с _method=PUT
      */
-    public function update(UpdateProfileRequest $request)
+    public function update(UpdateProfileRequest $request): RedirectResponse
     {
         $user = Auth::user();
         $profile = $user->getOrCreateProfile();
 
         $data = $request->validated();
 
-        // Обновить основные данные пользователя
-        $user->update($request->only(['name', 'email', 'username']));
+        // Обновить основные данные пользователя — только переданные непустые поля
+        $user->update(array_filter($request->only(['name', 'email', 'username'])));
 
-        $profileData = [
-            'bio' => $data['bio'] ?? null,
-            'birthdate' => $data['birthdate'] ?? null,
-            'location' => $data['location'] ?? null,
-            'website' => $data['website'] ?? null,
+        // Обновить данные профиля
+        $profile->update([
+            'bio'          => $data['bio'] ?? null,
+            'birthdate'    => $data['birthdate'] ?? null,
+            'location'     => $data['location'] ?? null,
+            'website'      => $data['website'] ?? null,
             'social_links' => $data['social_links'] ?? [],
-            'interests' => $data['interests'] ?? [],
-        ];
+            'interests'    => $data['interests'] ?? [],
+        ]);
 
-        // ИСПРАВЛЕНО: обрабатываем аватар прямо здесь
+        // Обработка аватара через сервис
         if ($request->hasFile('avatar')) {
-            // Удалить старый аватар
-            if ($profile->avatar && Storage::disk('public')->exists($profile->avatar)) {
-                Storage::disk('public')->delete($profile->avatar);
-            }
-            // Сохранить новый
-            $profileData['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            $this->avatarService->upload($user, $request->file('avatar'));
         }
 
-        $profile->update($profileData);
-
-        return redirect()->route('profile.show', $user)->with('success', 'Профиль успешно обновлён!');
+        return redirect()
+            ->route('profile.show', $user)
+            ->with('success', 'Профиль успешно обновлён!');
     }
 
+    /**
+     * Удалить аватар пользователя
+     */
+    public function deleteAvatar(): RedirectResponse
+    {
+        $this->avatarService->delete(Auth::user());
+
+        return back()->with('success', 'Аватар удалён!');
+    }
+
+    /**
+     * Удалить аккаунт пользователя
+     */
     public function destroy(User $user): RedirectResponse
     {
         // Только сам пользователь может удалить свой аккаунт
@@ -121,33 +133,16 @@ class ProfileController extends Controller
             abort(403);
         }
 
-        // Удалить аватар если есть
-        if ($user->profile && $user->profile->avatar) {
-            Storage::disk('public')->delete($user->profile->avatar);
-        }
+        // Удалить аватар через сервис
+        $this->avatarService->delete($user);
 
-        // Разлогинить
         Auth::logout();
 
-        // Удалить пользователя (профиль удалится каскадно если настроен onDelete cascade в миграции)
+        // Профиль удалится каскадно если настроен onDelete cascade в миграции
         $user->delete();
 
-        return redirect()->route('login')->with('success', 'Аккаунт удалён.');
-    }
-
-    /**
-     * Удалить аватар
-     */
-    public function deleteAvatar(): RedirectResponse
-    {
-        $user = Auth::user();
-        $profile = $user->getOrCreateProfile();
-
-        if ($profile->avatar && Storage::disk('public')->exists($profile->avatar)) {
-            Storage::disk('public')->delete($profile->avatar);
-            $profile->update(['avatar' => null]);
-        }
-
-        return back()->with('success', 'Аватар удалён!');
+        return redirect()
+            ->route('login')
+            ->with('success', 'Аккаунт удалён.');
     }
 }
