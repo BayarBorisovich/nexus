@@ -223,13 +223,14 @@
                                     </span>
                                 </button>
 
-                                <Link
-                                    :href="`/profile/${props.user?.username || props.user?.id}`"
+                                <button
+                                    type="button"
                                     class="btn btn-outline-light"
+                                    @click="router.visit(`/profile/${props.user?.id}`)"
                                 >
                                     <i class="bi bi-x-circle me-2"></i>
                                     Отмена
-                                </Link>
+                                </button>
                             </div>
                         </div>
                     </form>
