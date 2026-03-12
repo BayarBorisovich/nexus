@@ -4,33 +4,30 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 class AvatarService
 {
-    private const DISK = 'public';
     private const DIRECTORY = 'avatars';
+
+    public function __construct(
+        private readonly ImageService $imageService
+    ) {}
 
     /**
      * Загрузить/обновить аватар пользователя.
      * Удаляет старый файл, сохраняет новый, обновляет БД.
-     *
-     * @return string  Публичный URL нового аватара
      */
-    public function upload(User $user, UploadedFile $file): string
+    public function upload(User $user, UploadedFile $file): void
     {
         $profile = $user->getOrCreateProfile();
 
-        // Удалить старый файл если есть
-        $this->deleteFile($profile->avatar);
+        $path = $this->imageService->replace(
+            $profile->avatar,
+            $file,
+            self::DIRECTORY
+        );
 
-        // Сохранить новый файл
-        $path = $file->store(self::DIRECTORY, self::DISK);
-
-        // Обновить запись в БД
         $profile->update(['avatar' => $path]);
-
-        return asset('storage/' . $path);
     }
 
     /**
@@ -45,17 +42,8 @@ class AvatarService
             return;
         }
 
-        $this->deleteFile($profile->avatar);
-        $profile->update(['avatar' => null]);
-    }
+        $this->imageService->delete($profile->avatar);
 
-    /**
-     * Удалить файл из хранилища если он существует.
-     */
-    private function deleteFile(?string $path): void
-    {
-        if ($path && Storage::disk(self::DISK)->exists($path)) {
-            Storage::disk(self::DISK)->delete($path);
-        }
+        $profile->update(['avatar' => null]);
     }
 }
